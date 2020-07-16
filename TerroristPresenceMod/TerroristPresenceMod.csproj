@@ -34,9 +34,9 @@
     <Reference Include="NativeUI">
       <HintPath>..\..\..\..\Desktop\NativeUI.dll</HintPath>
     </Reference>
-    <Reference Include="ScriptHookVDotNet3, Version=3.0.2.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="ScriptHookVDotNet3, Version=3.0.4.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>bin\Debug\ScriptHookVDotNet3.dll</HintPath>
+      <HintPath>..\..\..\..\Desktop\ScriptHookVDotNet3.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

@@ -37,12 +37,12 @@ namespace TerroristPresenceMod
                 new Vector3(2624, 6268, 130), 7, "Old Hikers",
                 new FighterConfiguration(PedHash.Hippy01AMY, WeaponHash.Musket), 5, false, 1.7f
             )
-        };  
+        };
 
         public Main()
         {
-            Notification.Show("Terrorist Presence Mod (by Jomtek)");
-
+            Notification.Show("Terrorist Presence Modded (by Jomtek)");
+                    
             foreach (Blip blip in World.GetAllBlips())
                 if (blip.Color == BlipColor.RedDark2 || blip.Color == BlipColor.GreenDark)
                     blip.Delete();
@@ -73,8 +73,12 @@ namespace TerroristPresenceMod
                     {
                         if (zone.IsPlayerNearZone())
                         {
+                            foreach (TerroristZone z in terroristZones)
+                                z.ClearDeadEntities();
+
                             GTA.UI.Screen.ShowSubtitle("Radar message - Entering a zone controlled by " + zone.groupName + " terrorists");
                             zone.SpawnTerrorists();
+
                             Notification.Show("! We've been informed that terrorists are near your position !", true);
                         }
                     }
@@ -82,11 +86,12 @@ namespace TerroristPresenceMod
                     {
                         zone.DeleteTerrorists();
                         GTA.UI.Screen.ShowSubtitle("Radar message - Leaving " + zone.groupName + " zone");
-                    }   
+                    }
                 }
 
                 spawnZonesDelay = 350;
-            } else
+            }
+            else
             {
                 spawnZonesDelay--;
             }
@@ -94,10 +99,12 @@ namespace TerroristPresenceMod
             if (deadSoldiersManageDelay == 0)
             {
                 foreach (TerroristZone zone in terroristZones)
-                    if (zone.spawned && !zone.inactive) zone.RemoveDeadTerrorists();
+                    if (zone.spawned && !zone.inactive)
+                        zone.ManageDeadTerrorists();
 
                 deadSoldiersManageDelay = 50;
-            } else
+            }
+            else
             {
                 deadSoldiersManageDelay--;
             }
@@ -115,13 +122,14 @@ namespace TerroristPresenceMod
                                 break;
                                 //terrorist.Position = zone.zonePos;
                             }
-                
-                
+
+
                 soldiersPositionFixDelay = 500;
-            } else
+            }
+            else
             {
                 soldiersPositionFixDelay--;
             }
-        }   
+        }
     }
 }

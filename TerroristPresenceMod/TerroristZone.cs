@@ -13,6 +13,7 @@ namespace TerroristPresenceMod
         public string groupName { get; }
 
         public List<Ped> terrorists = new List<Ped>();
+        private List<Ped> deadTerrorists = new List<Ped>();
         private int terroristsAmount;
         private FighterConfiguration fighterCfg;
         private int spawnRadius;
@@ -63,7 +64,7 @@ namespace TerroristPresenceMod
             spawned = false;
         }
 
-        public void RemoveDeadTerrorists()
+        public void ManageDeadTerrorists()
         {
             var removedTerrorists = new List<Ped>();
 
@@ -75,7 +76,10 @@ namespace TerroristPresenceMod
                 }
 
             foreach (Ped terrorist in removedTerrorists)
+            {
                 this.terrorists.Remove(terrorist);
+                this.deadTerrorists.Add(terrorist);
+            }
 
             if (this.terrorists.Count == 0)
             {
@@ -85,6 +89,15 @@ namespace TerroristPresenceMod
                 this.zoneBlip.Name = "Safe Zone - " + this.groupName;
                 this.inactive = true;
             }
+        }
+
+        public int ClearDeadEntities()
+        {
+            int deletedEntities = deadTerrorists.Count;
+            foreach (Ped terrorist in deadTerrorists) terrorist.Delete();
+            deadTerrorists.Clear();
+
+            return deletedEntities;
         }
 
         public void SpawnTerrorists()
