@@ -41,7 +41,7 @@ namespace TerroristPresenceMod
 
         public Main()
         {
-            Notification.Show("Terrorist Presence Modded (by Jomtek)");
+            Notification.Show("Terrorist Presence Mod (v1.1) (by Jomtek)");
                     
             foreach (Blip blip in World.GetAllBlips())
                 if (blip.Color == BlipColor.RedDark2 || blip.Color == BlipColor.GreenDark)
