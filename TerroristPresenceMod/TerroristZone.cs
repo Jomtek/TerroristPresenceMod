@@ -124,12 +124,15 @@ namespace TerroristPresenceMod
                         weapon = this.fighterCfg.weapon;
 
                     ped.Weapons.Give(weapon, -1, true, true);
-                    ped.Accuracy = 1;
+                    ped.Accuracy = 35;
+                    ped.MaxHealth = 200;
+                    ped.Health = 200;
+                    ped.Armor = 100;
                     ped.Task.WanderAround();
                     ped.RelationshipGroup = GlobalInfo.RELATIONSHIP_TERRORIST;
 
-                    Function.Call(Hash.SET_PED_HEARING_RANGE, ped, 1000.0);
-                    Function.Call(Hash.SET_PED_SEEING_RANGE, ped, 1000.0);
+                    Function.Call(Hash.SET_PED_HEARING_RANGE, ped, 3000f);
+                    Function.Call(Hash.SET_PED_SEEING_RANGE, ped, 3000f);
 
                     ped.AddBlip();
                     if (ped.AttachedBlip != null)
