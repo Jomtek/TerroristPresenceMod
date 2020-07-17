@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GTA;
 using GTA.UI;
 using GTA.Math;
+using System.Windows.Forms;
 
 namespace TerroristPresenceMod
 {
@@ -11,7 +12,7 @@ namespace TerroristPresenceMod
         private List<TerroristZone> terroristZones = new List<TerroristZone>() {
             new TerroristZone(
                 new Vector3(1354, 3228, 53), 45, "The Desert Fighters",
-                new FighterConfiguration(PedHash.Blackops03SMY, WeaponHash.AssaultRifle), 50, false, 3f
+                new FighterConfiguration(PedHash.Blackops03SMY, WeaponHash.AssaultRifle), 50, false, 3f, 600, 450
             ),
             new TerroristZone(
                 new Vector3(1610, 1852, 103), 45, "Mountain Lovers",
@@ -19,7 +20,7 @@ namespace TerroristPresenceMod
             ),
             new TerroristZone(
                 new Vector3(2257, 1497, 69), 65, "The Ghosts",
-                new FighterConfiguration(PedHash.Marine03SMY, WeaponHash.Unarmed), 30, false, 3.5f
+                new FighterConfiguration(PedHash.Marine03SMY, WeaponHash.Unarmed), 30, false, 3.5f, 700, 400
             ),
             new TerroristZone(
                 new Vector3(2868, 2254, 140), 15, "Anti-Air Fighters",
@@ -27,7 +28,7 @@ namespace TerroristPresenceMod
             ),
             new TerroristZone(
                 new Vector3(3518, 3797, 30), 75, "Humane Occupiers",
-                new FighterConfiguration(PedHash.Marine03SMY, WeaponHash.SpecialCarbine), 40, false, 4f
+                new FighterConfiguration(PedHash.Marine03SMY, WeaponHash.SpecialCarbine), 40, false, 4f, 700, 500
             ),
             new TerroristZone(
                 new Vector3(2947, 5325, 101), 40, "Young Hikers",
@@ -35,7 +36,15 @@ namespace TerroristPresenceMod
             ),
             new TerroristZone(
                 new Vector3(2624, 6268, 130), 7, "Old Hikers",
-                new FighterConfiguration(PedHash.Hippy01AMY, WeaponHash.Musket), 5, false, 1.7f
+                new FighterConfiguration(PedHash.Hippy01AMY, WeaponHash.Musket), 5, false, 2f
+            ),
+            new TerroristZone(
+                new Vector3(2788, 3392, 55), 10, "Road-Emergency",
+                new FighterConfiguration(PedHash.Blackops01SMY, WeaponHash.CombatPistol), 5, false, 2.7f, 800, 600
+            ),
+            new TerroristZone(
+                new Vector3(-1541, 1383, 125), 7, "The River Mans",
+                new FighterConfiguration(PedHash.Paparazzi, WeaponHash.MiniSMG), 5, false, 2f, 800, 600
             )
         };
 
@@ -53,15 +62,23 @@ namespace TerroristPresenceMod
             GlobalInfo.RELATIONSHIP_TERRORIST = World.AddRelationshipGroup("TERRORIST");
             Utils.SetRelationships();
 
-            this.Tick += onTick;
-            // this.KeyDown += onKeyDown;
+            Tick += OnTick;
+            KeyDown += OnKeyDown;
+        }
+
+        private void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.K)
+            {
+                GTA.UI.Notification.Show(Game.Player.Character.Position.ToString());
+            }
         }
 
         private int spawnZonesDelay = 1000;
         private int deadSoldiersManageDelay = 50;
         private int soldiersPositionFixDelay = 500;
 
-        private void onTick(object sender, EventArgs e)
+        private void OnTick(object sender, EventArgs e)
         {
             if (spawnZonesDelay == 0)
             {

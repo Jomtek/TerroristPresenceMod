@@ -24,10 +24,14 @@ namespace TerroristPresenceMod
         public bool spawned = false;
         public bool inactive = false;
 
+        private int zoneFarLimit;
+        private int zoneNearLimit;
+
         public TerroristZone(
             Vector3 zonePos, int terroristsAmount,
             string groupName, FighterConfiguration fighterCfg,
-            int spawnRadius, bool spawnOnStreet = true, float blipScale = 2.5f)
+            int spawnRadius, bool spawnOnStreet = true, float blipScale = 2.5f,
+            int zoneFarLimit = 500, int zoneNearLimit = 350)
         {
             this.zonePos = zonePos;
             this.terroristsAmount = terroristsAmount;
@@ -36,6 +40,8 @@ namespace TerroristPresenceMod
             this.spawnRadius = spawnRadius;
             this.spawnOnStreet = spawnOnStreet;
             this.blipScale = blipScale;
+            this.zoneFarLimit = zoneFarLimit;
+            this.zoneNearLimit = zoneNearLimit;
         }
 
         public void InitBlip()
@@ -48,9 +54,9 @@ namespace TerroristPresenceMod
         }
 
         public bool IsPlayerNearZone() =>
-            Game.Player.Character.Position.DistanceTo(this.zonePos) < 350;
+            Game.Player.Character.Position.DistanceTo(this.zonePos) < this.zoneNearLimit;
         public bool IsPlayerFarFromZone() =>
-            Game.Player.Character.Position.DistanceTo(this.zonePos) > 500;
+            Game.Player.Character.Position.DistanceTo(this.zonePos) > this.zoneFarLimit;
 
         public void DeleteTerrorists()
         {
@@ -84,7 +90,7 @@ namespace TerroristPresenceMod
             if (this.terrorists.Count == 0)
             {
                 Screen.ShowSubtitle("Congratulations - " + this.groupName + " (" + this.terroristsAmount + " soldiers) defeated", 15000);
-                Game.Player.Money += this.terroristsAmount * 650;
+                //Game.Player.Money += terroristsAmount * 650;
                 this.zoneBlip.Color = BlipColor.GreenDark;
                 this.zoneBlip.Name = "Safe Zone - " + this.groupName;
                 this.inactive = true;
@@ -144,8 +150,6 @@ namespace TerroristPresenceMod
             {
                 Notification.Show(ex.StackTrace);
             }
-
-            // Notification.Show("Spawned " + this.groupName + " terrorists");
         }
     }   
 }
