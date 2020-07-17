@@ -71,9 +71,13 @@ namespace TerroristPresenceMod
         {
             if (e.KeyCode == Keys.H)
             {
+                int clearedEntities = 0;
                 foreach (TerroristZone zone in terroristZones)
                     if (zone.spawned)
-                        zone.ClearDeadEntities();
+                        clearedEntities += zone.ClearDeadEntities();
+
+                if (clearedEntities > 0)
+                    GTA.UI.Notification.Show(clearedEntities + " dead entities cleared");
             }
         }
 
@@ -109,7 +113,7 @@ namespace TerroristPresenceMod
                         GTA.UI.Screen.ShowSubtitle("Radar message - Leaving " + zone.groupName + " zone");
                         break;
                     }
-                }
+                }   
 
                 spawnZonesDelay = 350;
             }
