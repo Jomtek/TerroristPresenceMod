@@ -106,6 +106,49 @@ namespace TerroristPresenceMod
             return deletedEntities;
         }
 
+        public void SpawnTerrorist()
+        {
+            Ped ped;
+            try
+            {
+                ped = World.CreatePed(
+                    this.fighterCfg.pedHash,
+                    spawnOnStreet ? World.GetNextPositionOnStreet(this.zonePos.Around(this.spawnRadius)) : World.GetNextPositionOnSidewalk(this.zonePos.Around(this.spawnRadius))
+               );
+            }
+            catch (Exception e)
+            {
+                GTA.UI.Notification.Show("spwn: " + e.Message);
+                throw e;
+            }
+
+            ped.Weapons.Give(WeaponHash.Unarmed, -1, true, true);
+
+            WeaponHash weapon;
+
+            if (this.fighterCfg.weapon == WeaponHash.Unarmed)
+                weapon = GlobalInfo.weaponsList[GlobalInfo.generalRandomInstance.Next(0, GlobalInfo.weaponsList.Count)];
+            else
+                weapon = this.fighterCfg.weapon;
+
+            ped.Weapons.Give(weapon, -1, true, true);
+            ped.Accuracy = 35;
+            ped.MaxHealth = 200;
+            ped.Health = 200;
+            ped.Armor = 100;
+            ped.Task.WanderAround();
+            ped.RelationshipGroup = GlobalInfo.RELATIONSHIP_TERRORIST;
+
+            Function.Call(Hash.SET_PED_HEARING_RANGE, ped, 3000f);
+            Function.Call(Hash.SET_PED_SEEING_RANGE, ped, 3000f);
+
+            ped.AddBlip();
+            if (ped.AttachedBlip != null)
+                ped.AttachedBlip.Color = BlipColor.GreyDark;
+
+            terrorists.Add(ped);
+        }
+
         public void SpawnTerrorists()
         {
             if (!spawned)
@@ -116,36 +159,7 @@ namespace TerroristPresenceMod
             try
             {
                 for (int i = 1; i < this.terroristsAmount; i++)
-                {
-                    var ped = World.CreatePed(
-                        this.fighterCfg.pedHash,
-                        spawnOnStreet ? World.GetNextPositionOnStreet(this.zonePos.Around(this.spawnRadius)) : World.GetNextPositionOnSidewalk(this.zonePos.Around(this.spawnRadius))
-                   );
-
-                    WeaponHash weapon;
-
-                    if (this.fighterCfg.weapon == WeaponHash.Unarmed)
-                        weapon = GlobalInfo.weaponsList[GlobalInfo.generalRandomInstance.Next(0, GlobalInfo.weaponsList.Count)];
-                    else
-                        weapon = this.fighterCfg.weapon;
-
-                    ped.Weapons.Give(weapon, -1, true, true);
-                    ped.Accuracy = 35;
-                    ped.MaxHealth = 200;
-                    ped.Health = 200;
-                    ped.Armor = 100;
-                    ped.Task.WanderAround();
-                    ped.RelationshipGroup = GlobalInfo.RELATIONSHIP_TERRORIST;
-
-                    Function.Call(Hash.SET_PED_HEARING_RANGE, ped, 3000f);
-                    Function.Call(Hash.SET_PED_SEEING_RANGE, ped, 3000f);
-
-                    ped.AddBlip();
-                    if (ped.AttachedBlip != null)
-                        ped.AttachedBlip.Color = BlipColor.GreyDark;
-
-                    terrorists.Add(ped);
-                }
+                    SpawnTerrorist();
             } catch (Exception ex)
             {
                 Notification.Show(ex.StackTrace);

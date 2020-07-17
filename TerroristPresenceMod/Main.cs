@@ -4,6 +4,7 @@ using GTA;
 using GTA.UI;
 using GTA.Math;
 using System.Windows.Forms;
+using System.Linq.Expressions;
 
 namespace TerroristPresenceMod
 {
@@ -50,10 +51,10 @@ namespace TerroristPresenceMod
 
         public Main()
         {
-            Notification.Show("Terrorist Presence Mod (v1.1) (by Jomtek)");
+            Notification.Show("Terrorist Presence Mod (v1.11) (by Jomtek)");
                     
             foreach (Blip blip in World.GetAllBlips())
-                if (blip.Color == BlipColor.RedDark2 || blip.Color == BlipColor.GreenDark)
+                if (blip.Color == BlipColor.RedDark2 || blip.Color == BlipColor.GreenDark || blip.Color == BlipColor.GreyDark)
                     blip.Delete();
 
             foreach (TerroristZone zone in terroristZones)
@@ -68,9 +69,11 @@ namespace TerroristPresenceMod
 
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.K)
+            if (e.KeyCode == Keys.H)
             {
-                GTA.UI.Notification.Show(Game.Player.Character.Position.ToString());
+                foreach (TerroristZone zone in terroristZones)
+                    if (zone.spawned)
+                        zone.ClearDeadEntities();
             }
         }
 
@@ -97,12 +100,14 @@ namespace TerroristPresenceMod
                             zone.SpawnTerrorists();
 
                             Notification.Show("! We've been informed that terrorists are near your position !", true);
+                            break;
                         }
                     }
                     else if (zone.IsPlayerFarFromZone())
                     {
                         zone.DeleteTerrorists();
                         GTA.UI.Screen.ShowSubtitle("Radar message - Leaving " + zone.groupName + " zone");
+                        break;
                     }
                 }
 
@@ -126,26 +131,34 @@ namespace TerroristPresenceMod
                 deadSoldiersManageDelay--;
             }
 
-            if (soldiersPositionFixDelay == 0)
+            try
             {
-                foreach (TerroristZone zone in terroristZones)
-                    if (zone.spawned && !zone.inactive)
-                        foreach (Ped terrorist in zone.terrorists)
-                            if (terrorist.Position.X == 0)
+                if (soldiersPositionFixDelay == 0)
+                {
+                    for (int i = 0; i < terroristZones.Count; i++)
+                    {
+                        TerroristZone zone = terroristZones[i];
+                        if (zone.spawned && !zone.inactive)
+                            for (int k = 0; k < zone.terrorists.Count; k++)
                             {
-                                zone.spawned = false;
-                                zone.DeleteTerrorists();
-                                zone.SpawnTerrorists();
-                                break;
-                                //terrorist.Position = zone.zonePos;
+                                Ped terrorist = zone.terrorists[k];
+                                if (terrorist.Position.X == 0)
+                                {
+                                    zone.DeleteTerrorists();
+                                    break;  
+                                }
                             }
+                    }
 
-
-                soldiersPositionFixDelay = 500;
-            }
-            else
+                    soldiersPositionFixDelay = 500;
+                }
+                else
+                {
+                    soldiersPositionFixDelay--;
+                }
+            } catch (Exception ex)
             {
-                soldiersPositionFixDelay--;
+                GTA.UI.Notification.Show(ex.ToString());
             }
         }
     }
