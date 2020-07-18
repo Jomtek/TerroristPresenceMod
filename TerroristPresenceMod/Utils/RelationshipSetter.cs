@@ -1,8 +1,8 @@
 ﻿using GTA;
 
-namespace TerroristPresenceMod
+namespace TerroristPresenceMod.Utils
 {
-    class Utils
+    public class RelationshipSetter
     {
         public static void SetRelationships()
         {
@@ -14,6 +14,5 @@ namespace TerroristPresenceMod
             GlobalInfo.RELATIONSHIP_TERRORIST.SetRelationshipBetweenGroups(GlobalInfo.RELATIONSHIP_CIVMALE, Relationship.Hate, false);
             GlobalInfo.RELATIONSHIP_TERRORIST.SetRelationshipBetweenGroups(GlobalInfo.RELATIONSHIP_CIVFEMALE, Relationship.Hate, false);
         }
-
     }
 }

@@ -4,6 +4,7 @@ using GTA.Native;
 using GTA.UI;
 using System;
 using System.Collections.Generic;
+using TerroristPresenceMod.Utils;
 
 namespace TerroristPresenceMod
 {
@@ -13,9 +14,9 @@ namespace TerroristPresenceMod
         public string groupName { get; }
 
         public List<Ped> terrorists = new List<Ped>();
+        public int terroristsAmount;
+        public FighterConfiguration fighterCfg;
         private List<Ped> deadTerrorists = new List<Ped>();
-        private int terroristsAmount;
-        private FighterConfiguration fighterCfg;
         private int spawnRadius;
         private bool spawnOnStreet;
         private float blipScale;
@@ -23,9 +24,14 @@ namespace TerroristPresenceMod
         private Blip zoneBlip;
         public bool spawned = false;
         public bool inactive = false;
+        public bool dangerous = false;
+        public bool capture = false;
 
         private int zoneFarLimit;
         private int zoneNearLimit;
+
+        private int ticksSinceZoneReclaim = 0;
+        private bool registerTicks = false;
 
         public TerroristZone(
             Vector3 zonePos, int terroristsAmount,
@@ -44,13 +50,21 @@ namespace TerroristPresenceMod
             this.zoneNearLimit = zoneNearLimit;
         }
 
-        public void InitBlip()
+        public void InitBlip(bool declare = true)
         {
-            this.zoneBlip = World.CreateBlip(this.zonePos);
+            if (declare) this.zoneBlip = World.CreateBlip(this.zonePos);
             this.zoneBlip.Name = "Terrorist Zone - " + this.groupName;
             this.zoneBlip.Color = BlipColor.RedDark2;
             this.zoneBlip.Scale = this.blipScale;
             this.zoneBlip.IsShortRange = false;
+        }
+
+        public void MarkBlipAsDangerous()
+        {
+            this.zoneBlip.Name = "Dangerous Zone - " + this.groupName;
+            this.zoneBlip.Color = BlipColor.Orange; 
+            this.zoneBlip.Scale = this.blipScale * 1.2f;
+            this.zoneBlip.IsFlashing = true;
         }
 
         public bool IsPlayerNearZone() =>
@@ -89,11 +103,17 @@ namespace TerroristPresenceMod
 
             if (this.terrorists.Count == 0)
             {
+                ScreenEffects.ZoneCaptured();
                 Screen.ShowSubtitle("Congratulations - " + this.groupName + " (" + this.terroristsAmount + " soldiers) defeated", 15000);
-                //Game.Player.Money += terroristsAmount * 650;
+
                 this.zoneBlip.Color = BlipColor.GreenDark;
+                this.zoneBlip.IsFlashing = false;
+                this.zoneBlip.ShowRoute = false;
+                this.zoneBlip.Scale = 2.5f;
                 this.zoneBlip.Name = "Safe Zone - " + this.groupName;
+                this.dangerous = false;
                 this.inactive = true;
+                this.capture = false;
             }
         }
 
@@ -161,9 +181,61 @@ namespace TerroristPresenceMod
                 for (int i = 1; i < this.terroristsAmount; i++)
                     SpawnTerrorist();
             } catch (Exception ex)
-            {
+            {   
                 Notification.Show(ex.StackTrace);
             }
+        }
+
+        public void ZoneReclaimedTick()
+        {
+            if (!dangerous && inactive && GlobalInfo.generalRandomInstance.Next(0, 50) == 0)
+            {
+                ScreenEffects.ZoneReclaimed();
+
+                MarkBlipAsDangerous();
+                spawned = false;
+                inactive = false;
+                dangerous = true;
+
+                if (Convert.ToInt32(terroristsAmount * 0.8) > 5)
+                    terroristsAmount = Convert.ToInt32(terroristsAmount * 0.8);
+                else
+                    terroristsAmount = 5;
+
+                fighterCfg = new FighterConfiguration(PedHash.Marine01SMM, WeaponHash.Unarmed);
+                GTA.UI.Screen.ShowSubtitle(groupName + " zone is being reclaimed !", 8000);
+
+                registerTicks = true;
+            }
+        }
+
+        public bool ZoneLostTick()
+        {
+            if (registerTicks)
+                ticksSinceZoneReclaim++;
+
+            if (dangerous && !capture && ticksSinceZoneReclaim == 2)
+            {
+                ScreenEffects.ZoneLost();
+
+                InitBlip(false);
+                inactive = false;
+                spawned = false;
+                dangerous = false;
+
+                if (Convert.ToInt32(terroristsAmount * 1.2) <= 80)
+                    terroristsAmount = Convert.ToInt32(terroristsAmount * 1.2);
+                else
+                    terroristsAmount = 80;
+
+                ticksSinceZoneReclaim = 0;
+                registerTicks = false;
+
+                GTA.UI.Screen.ShowSubtitle(groupName + " zone was lost - terrorists are now stronger !", 10000);
+                return true;
+            }
+
+            return false;
         }
     }   
 }

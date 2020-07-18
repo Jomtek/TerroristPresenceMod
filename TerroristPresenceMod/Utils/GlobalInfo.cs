@@ -3,7 +3,7 @@ using GTA.Math;
 using System;
 using System.Collections.Generic;
 
-namespace TerroristPresenceMod
+namespace TerroristPresenceMod.Utils
 {
     class GlobalInfo
     {
