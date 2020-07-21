@@ -1,0 +1,123 @@
+<Config>
+	<Zone>
+		<Name>The Desert Fighters</Name>
+		<SoldiersCount>45</SoldiersCount>
+		<SpawnRadius>50</SpawnRadius>
+		<SpawnOnStreet>false</SpawnOnStreet>
+		<OutfitId>g_m_m_chicold_01</OutfitId>
+		<WeaponId>weapon_assaultrifle</WeaponId>
+		<IsReclaimable>true</IsReclaimable>	
+		<ReclaimersOutfit>g_m_m_chicold_01</ReclaimersOutfit>	
+		<X>1354</X>
+		<Y>3228</Y>
+		<Z>53</Z>
+	</Zone>
+	<Zone>
+		<Name>Mountain Lovers</Name>
+		<SoldiersCount>45</SoldiersCount>
+		<SpawnRadius>60</SpawnRadius>
+		<SpawnOnStreet>false</SpawnOnStreet>
+		<OutfitId>cs_chrisformage</OutfitId>
+		<WeaponId>weapon_marksmanrifle</WeaponId>
+		<IsReclaimable>true</IsReclaimable>
+		<X>1610</X>
+		<Y>1852</Y>
+		<Z>103</Z>
+	</Zone>
+	<Zone>
+		<Name>The Ghosts</Name>
+		<SoldiersCount>65</SoldiersCount>
+		<SpawnRadius>30</SpawnRadius>
+		<SpawnOnStreet>false</SpawnOnStreet>
+		<OutfitId>g_m_m_chicold_01</OutfitId>
+		<WeaponId></WeaponId>
+		<IsReclaimable>true</IsReclaimable>
+		<X>2257</X>
+		<Y>1497</Y>
+		<Z>69</Z>
+	</Zone>
+	<Zone>
+		<Name>Anti-Air Fighters</Name>
+		<SoldiersCount>15</SoldiersCount>
+		<SpawnRadius>5</SpawnRadius>
+		<SpawnOnStreet>false</SpawnOnStreet>
+		<OutfitId>g_m_m_chicold_01</OutfitId>
+		<WeaponId>weapon_rpg</WeaponId>
+		<IsReclaimable>false	</IsReclaimable>
+		<X>2868</X>
+		<Y>2254</Y>
+		<Z>140</Z>
+	</Zone>
+	<Zone>
+		<Name>Humane Occupiers</Name>
+		<SoldiersCount>75</SoldiersCount>
+		<SpawnRadius>40</SpawnRadius>
+		<SpawnOnStreet>false</SpawnOnStreet>
+		<OutfitId>s_m_y_marine_03</OutfitId>
+		<WeaponId>weapon_specialcarbine</WeaponId>
+		<IsReclaimable>true</IsReclaimable>
+		<X>3518</X>
+		<Y>3797</Y>
+		<Z>30</Z>
+	</Zone>
+	<Zone>
+		<Name>Young Hikers</Name>
+		<SoldiersCount>40</SoldiersCount>
+		<SpawnRadius>50</SpawnRadius>
+		<SpawnOnStreet>false</SpawnOnStreet>
+		<OutfitId>u_m_y_hippie_01</OutfitId>
+		<WeaponId>weapon_musket</WeaponId>
+		<IsReclaimable>true</IsReclaimable>
+		<X>2947</X>
+		<Y>5325</Y>
+		<Z>101</Z>
+	</Zone>
+	<Zone>
+		<Name>Old Hikers</Name>
+		<SoldiersCount>7</SoldiersCount>
+		<SpawnRadius>5</SpawnRadius>
+		<SpawnOnStreet>false</SpawnOnStreet>
+		<OutfitId>a_m_y_hippy_01</OutfitId>
+		<WeaponId>weapon_dbshotgun</WeaponId>
+		<IsReclaimable>true</IsReclaimable>
+		<X>2624</X>
+		<Y>6268</Y>
+		<Z>130</Z>
+	</Zone>
+	<Zone>
+		<Name>Road-Emergency</Name>
+		<SoldiersCount>10</SoldiersCount>
+		<SpawnRadius>10</SpawnRadius>
+		<SpawnOnStreet>true</SpawnOnStreet>
+		<OutfitId>s_m_m_pilot_02</OutfitId>
+		<WeaponId>weapon_mg</WeaponId>
+		<IsReclaimable>true</IsReclaimable>
+		<X>2788</X>
+		<Y>3392</Y>
+		<Z>55</Z>
+	</Zone>
+	<Zone>
+		<Name>The River Dudes</Name>
+		<SoldiersCount>7</SoldiersCount>
+		<SpawnRadius>5</SpawnRadius>
+		<SpawnOnStreet>false</SpawnOnStreet>
+		<OutfitId>u_m_y_paparazzi</OutfitId>
+		<WeaponId>weapon_pistol</WeaponId>
+		<IsReclaimable>true</IsReclaimable>
+		<X>-1541</X>
+		<Y>1383</Y>
+		<Z>125</Z>
+	</Zone>
+	<Zone>
+		<Name>Barrio Fighters</Name>
+		<SoldiersCount>40</SoldiersCount>
+		<SpawnRadius>60</SpawnRadius>
+		<SpawnOnStreet>true</SpawnOnStreet>
+		<OutfitId>s_m_y_marine_02</OutfitId>
+		<WeaponId>weapon_microsmg</WeaponId>
+		<IsReclaimable>true</IsReclaimable>
+		<X>-332</X>
+		<Y>6141</Y>
+		<Z>30</Z>
+	</Zone>
+</Config>
