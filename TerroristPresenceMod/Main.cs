@@ -4,12 +4,8 @@ using GTA;
 using GTA.UI;
 using GTA.Math;
 using System.Windows.Forms;
-using System.Linq.Expressions;
-using System.ComponentModel;
 using TerroristPresenceMod.Utils;
-using GTA.Native;
 using System.Xml;
-using System.IO;
 
 namespace TerroristPresenceMod
 {
@@ -19,7 +15,7 @@ namespace TerroristPresenceMod
 
         public Main()
         {
-            Notification.Show("Terrorist Presence Mod (v1.20) (by Jomtek)");
+            Notification.Show("Terrorist Presence Mod (v1.30) (by Jomtek)");
 
             foreach (Blip blip in World.GetAllBlips())
                 if (blip.Color == BlipColor.RedDark2 ||
@@ -43,7 +39,7 @@ namespace TerroristPresenceMod
             {
                 foreach (XmlNode zoneNode in doc.DocumentElement.ChildNodes)
                     terroristZones.Add(XmlParser.parseZoneConfiguration(zoneNode.ChildNodes, ref encounteredNames, ref encounteredPositions));
-            } catch (XmlParserException ex)
+            } catch (XmlParsingException ex)
             {
                 GTA.UI.Screen.ShowSubtitle("[TerroristPresence] Invalid XML file : " + ex.Message, 10000);
                 return;

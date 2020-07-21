@@ -1,23 +1,18 @@
 ﻿using GTA;
 using GTA.Math;
 using GTA.Native;
-using GTA.UI;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Policy;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using Hash = GTA.Native.Hash;
 
 namespace TerroristPresenceMod.Utils
 {
-    class XmlParserException : Exception
+    class XmlParsingException : Exception
     {
         public override string Message { get; }
 
-        public XmlParserException(string message)
+        public XmlParsingException(string message)
         {
             Message = message;
         }
@@ -96,7 +91,7 @@ namespace TerroristPresenceMod.Utils
                     posZ = Convert.ToInt32(node.InnerText);
 
                 if (!nodesList.Contains(node.Name))
-                    throw new XmlParserException("Invalid XML file (unknown node '" + node.Name + "')");
+                    throw new XmlParsingException("Invalid XML file (unknown node '" + node.Name + "')");
 
                 if (requiredNodes.Contains(node.Name))
                     requiredNodes.Remove(node.Name);
@@ -106,15 +101,15 @@ namespace TerroristPresenceMod.Utils
 
             foreach (Vector3 pos in encounteredPositions)
                 if (currentPos.DistanceTo(pos) < 100)
-                    throw new XmlParserException("Zone '" + zoneName + "' is too close to another zone on the map.");
+                    throw new XmlParsingException("Zone '" + zoneName + "' is too close to another zone on the map.");
 
             encounteredPositions.Add(currentPos);
 
             if (requiredNodes.Count > 0)
-                throw new XmlParserException("Missing node '" + requiredNodes[0] + "'");
+                throw new XmlParsingException("Missing node '" + requiredNodes[0] + "'");
 
             if (encounteredNames.Contains(zoneName))
-                throw new XmlParserException("Two zones cannot have the same name : '" + zoneName + "'");
+                throw new XmlParsingException("Two zones cannot have the same name : '" + zoneName + "'");
             else
                 encounteredNames.Add(zoneName);
 
