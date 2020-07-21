@@ -29,7 +29,8 @@ namespace TerroristPresenceMod.Utils
             WeaponHash.HeavySniper,
             WeaponHash.RPG,
             WeaponHash.AssaultRifle,
-            WeaponHash.DoubleBarrelShotgun
+            WeaponHash.DoubleBarrelShotgun,
+            WeaponHash.Minigun
         };
     }
 }

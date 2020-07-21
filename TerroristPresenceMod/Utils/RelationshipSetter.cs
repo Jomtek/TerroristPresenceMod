@@ -11,8 +11,8 @@ namespace TerroristPresenceMod.Utils
             GlobalInfo.RELATIONSHIP_TERRORIST.SetRelationshipBetweenGroups(GlobalInfo.RELATIONSHIP_SECURITY_GUARD, Relationship.Hate, true);
             GlobalInfo.RELATIONSHIP_TERRORIST.SetRelationshipBetweenGroups(GlobalInfo.RELATIONSHIP_PLAYER, Relationship.Hate, false);
 
-            GlobalInfo.RELATIONSHIP_TERRORIST.SetRelationshipBetweenGroups(GlobalInfo.RELATIONSHIP_CIVMALE, Relationship.Hate, false);
-            GlobalInfo.RELATIONSHIP_TERRORIST.SetRelationshipBetweenGroups(GlobalInfo.RELATIONSHIP_CIVFEMALE, Relationship.Hate, false);
+            GlobalInfo.RELATIONSHIP_TERRORIST.SetRelationshipBetweenGroups(GlobalInfo.RELATIONSHIP_CIVMALE, Relationship.Dislike, false);
+            GlobalInfo.RELATIONSHIP_TERRORIST.SetRelationshipBetweenGroups(GlobalInfo.RELATIONSHIP_CIVFEMALE, Relationship.Dislike, false);
         }
     }
 }

@@ -7,53 +7,15 @@ using System.Windows.Forms;
 using System.Linq.Expressions;
 using System.ComponentModel;
 using TerroristPresenceMod.Utils;
+using GTA.Native;
+using System.Xml;
+using System.IO;
 
 namespace TerroristPresenceMod
 {
     public class Main : Script
     {
-        private List<TerroristZone> terroristZones = new List<TerroristZone>() {
-            new TerroristZone(
-                new Vector3(1354, 3228, 53), 45, "The Desert Fighters",
-                new FighterConfiguration(PedHash.Blackops03SMY, WeaponHash.AssaultRifle), 50, false, 2.5f, 600, 450
-            ),
-            new TerroristZone(
-                new Vector3(1610, 1852, 103), 45, "Mountain Lovers",
-                new FighterConfiguration(PedHash.CrisFormageCutscene, WeaponHash.SniperRifle), 60, false, 2.5f
-            ),
-            new TerroristZone(
-                new Vector3(2257, 1497, 69), 65, "The Ghosts",
-                new FighterConfiguration(PedHash.Marine03SMY, WeaponHash.Unarmed), 30, false, 2.5f, 700, 400
-            ),
-            new TerroristZone(
-                new Vector3(2868, 2254, 140), 15, "Anti-Air Fighters",
-                new FighterConfiguration(PedHash.Blackops01SMY, WeaponHash.HomingLauncher), 5, false, 2.5f
-            ),
-            new TerroristZone(
-                new Vector3(3518, 3797, 30), 75, "Humane Occupiers",
-                new FighterConfiguration(PedHash.Marine03SMY, WeaponHash.SpecialCarbine), 40, false, 2.5f, 800, 500
-            ),
-            new TerroristZone(
-                new Vector3(2947, 5325, 101), 40, "Young Hikers",
-                new FighterConfiguration(PedHash.Hippy01AMY, WeaponHash.Musket), 50, false, 2.5f
-            ),
-            new TerroristZone(
-                new Vector3(2624, 6268, 130), 7, "Old Hikers",
-                new FighterConfiguration(PedHash.Hippy01AMY, WeaponHash.Musket), 5, false, 2.5f
-            ),
-            new TerroristZone(
-                new Vector3(2788, 3392, 55), 10, "Road-Emergency",
-                new FighterConfiguration(PedHash.Blackops01SMY, WeaponHash.CombatPistol), 10, true, 2.5f, 900, 300
-            ),
-            new TerroristZone(
-                new Vector3(-1541, 1383, 125), 7, "The River Dudes",
-                new FighterConfiguration(PedHash.Paparazzi, WeaponHash.MiniSMG), 5, false, 2.5f, 800, 600
-            ),
-            new TerroristZone(
-                new Vector3(-332, 6141, 30), 40, "Barrio Fighters",
-                new FighterConfiguration(PedHash.Marine02SMM, WeaponHash.AssaultSMG), 60, true, 2.5f, 900, 300
-            ),
-        };
+        private List<TerroristZone> terroristZones = new List<TerroristZone>();
 
         public Main()
         {
@@ -68,11 +30,27 @@ namespace TerroristPresenceMod
                     blip.Delete();
                 }
 
-            foreach (TerroristZone zone in terroristZones)
-                zone.InitBlip();
-
             GlobalInfo.RELATIONSHIP_TERRORIST = World.AddRelationshipGroup("TERRORIST");
             RelationshipSetter.SetRelationships();
+            
+            XmlDocument doc = new XmlDocument();
+            doc.Load("scripts/TerroristPresenceMod.xml");
+
+            var encounteredNames = new List<string>();
+            var encounteredPositions = new List<Vector3>();
+
+            try
+            {
+                foreach (XmlNode zoneNode in doc.DocumentElement.ChildNodes)
+                    terroristZones.Add(XmlParser.parseZoneConfiguration(zoneNode.ChildNodes, ref encounteredNames, ref encounteredPositions));
+            } catch (XmlParserException ex)
+            {
+                GTA.UI.Screen.ShowSubtitle("[TerroristPresence] Invalid XML file : " + ex.Message, 10000);
+                return;
+            }
+
+            foreach (TerroristZone zone in terroristZones)
+                zone.InitBlip();
 
             Tick += OnTick;
             KeyDown += OnKeyDown;
@@ -90,6 +68,23 @@ namespace TerroristPresenceMod
                 if (clearedEntities > 0)
                     GTA.UI.Notification.Show(clearedEntities + " dead entities cleared");
 
+                foreach (TerroristZone zone in terroristZones)
+                    if (zone.spawned)
+                        for (int i = 0; i < zone.terrorists.Count; i++)
+                        {
+                            Ped terrorist = zone.terrorists[i];
+
+                            if ((!terrorist.IsWalking && !terrorist.IsInCombat && !terrorist.IsInCover) || !terrorist.IsVisible)
+                            {
+                                zone.DeleteTerrorist(terrorist);
+                                zone.SpawnTerrorist();
+                            }
+                        }
+            } else if (e.KeyCode == Keys.K)
+            {
+                Notification.Show("X: " + ((int)Game.Player.Character.Position.X).ToString() +
+                    " | Y: " + ((int)Game.Player.Character.Position.Y).ToString() +
+                    " | Z: " + ((int)Game.Player.Character.Position.Z).ToString());
             }
         }
 
@@ -128,7 +123,9 @@ namespace TerroristPresenceMod
                     else if (zone.IsPlayerFarFromZone())
                     {
                         zone.DeleteTerrorists();
+                        zone.ClearDeadEntities();
                         zone.capture = false;
+                        
                         GTA.UI.Screen.ShowSubtitle("Radar message - Leaving " + zone.groupName + " zone");
                         break;
                     }
@@ -187,7 +184,8 @@ namespace TerroristPresenceMod
             if (zonesReclaimedDelay == 0)
             {
                 foreach (TerroristZone zone in terroristZones)
-                    zone.ZoneReclaimedTick();
+                    if (zone.isReclaimable)
+                        zone.ZoneReclaimedTick();
 
                 zonesReclaimedDelay = 375;
             } else
@@ -198,7 +196,9 @@ namespace TerroristPresenceMod
             if (zonesLostDelay == 0)
             {
                 foreach (TerroristZone zone in terroristZones)
-                    if (zone.ZoneLostTick()) break;
+                    if (zone.isReclaimable)
+                        if (zone.ZoneLostTick())
+                            break;
 
                 zonesLostDelay = 8000;
             } else

@@ -27,6 +27,10 @@ namespace TerroristPresenceMod
         public bool dangerous = false;
         public bool capture = false;
 
+        public bool isReclaimable = true;
+        public PedHash reclaimersOutfit;
+        public WeaponHash reclaimersWeapon;
+
         private int zoneFarLimit;
         private int zoneNearLimit;
 
@@ -36,8 +40,9 @@ namespace TerroristPresenceMod
         public TerroristZone(
             Vector3 zonePos, int terroristsAmount,
             string groupName, FighterConfiguration fighterCfg,
-            int spawnRadius, bool spawnOnStreet = true, float blipScale = 2.5f,
-            int zoneFarLimit = 500, int zoneNearLimit = 350)
+            int spawnRadius, bool spawnOnStreet = true, bool isReclaimable = true,
+            PedHash reclaimersOutfit = PedHash.Marine03SMY, WeaponHash reclaimersWeapon = WeaponHash.Unarmed,
+            float blipScale = 2.5f, int zoneFarLimit = 500, int zoneNearLimit = 350)
         {
             this.zonePos = zonePos;
             this.terroristsAmount = terroristsAmount;
@@ -48,6 +53,10 @@ namespace TerroristPresenceMod
             this.blipScale = blipScale;
             this.zoneFarLimit = zoneFarLimit;
             this.zoneNearLimit = zoneNearLimit;
+
+            this.isReclaimable = isReclaimable;
+            this.reclaimersOutfit = reclaimersOutfit;
+            this.reclaimersWeapon = reclaimersWeapon;
         }
 
         public void InitBlip(bool declare = true)
@@ -128,23 +137,12 @@ namespace TerroristPresenceMod
 
         public void SpawnTerrorist()
         {
-            Ped ped;
-            try
-            {
-                ped = World.CreatePed(
-                    this.fighterCfg.pedHash,
-                    spawnOnStreet ? World.GetNextPositionOnStreet(this.zonePos.Around(this.spawnRadius)) : World.GetNextPositionOnSidewalk(this.zonePos.Around(this.spawnRadius))
-               );
-            }
-            catch (Exception e)
-            {
-                GTA.UI.Notification.Show("spwn: " + e.Message);
-                throw e;
-            }
+            Ped ped = World.CreatePed(
+                this.fighterCfg.pedHash,
+                spawnOnStreet ? World.GetNextPositionOnStreet(this.zonePos.Around(this.spawnRadius)) : World.GetNextPositionOnSidewalk(this.zonePos.Around(this.spawnRadius))
+            );
 
-            ped.Weapons.Give(WeaponHash.Unarmed, -1, true, true);
-
-            WeaponHash weapon;
+            WeaponHash weapon = WeaponHash.Unarmed;
 
             if (this.fighterCfg.weapon == WeaponHash.Unarmed)
                 weapon = GlobalInfo.weaponsList[GlobalInfo.generalRandomInstance.Next(0, GlobalInfo.weaponsList.Count)];
@@ -186,6 +184,13 @@ namespace TerroristPresenceMod
             }
         }
 
+        public void DeleteTerrorist(Ped terrorist)
+        {
+            terrorist.AttachedBlip.Delete();
+            terrorist.Delete();
+            this.terrorists.Remove(terrorist);
+        }
+
         public void ZoneReclaimedTick()
         {
             if (!dangerous && inactive && GlobalInfo.generalRandomInstance.Next(0, 50) == 0)
@@ -202,12 +207,12 @@ namespace TerroristPresenceMod
                 else
                     terroristsAmount = 5;
 
-                fighterCfg = new FighterConfiguration(PedHash.Marine01SMM, WeaponHash.Unarmed);
+                fighterCfg = new FighterConfiguration(reclaimersOutfit, reclaimersWeapon);
                 GTA.UI.Screen.ShowSubtitle(groupName + " zone is being reclaimed !", 8000);
 
                 registerTicks = true;
             }
-        }
+        }   
 
         public bool ZoneLostTick()
         {
@@ -223,10 +228,10 @@ namespace TerroristPresenceMod
                 spawned = false;
                 dangerous = false;
 
-                if (Convert.ToInt32(terroristsAmount * 1.2) <= 80)
-                    terroristsAmount = Convert.ToInt32(terroristsAmount * 1.2);
+                if (Convert.ToInt32(terroristsAmount * 1.4) <= 100)
+                    terroristsAmount = Convert.ToInt32(terroristsAmount * 1.4);
                 else
-                    terroristsAmount = 80;
+                    terroristsAmount = 100;
 
                 ticksSinceZoneReclaim = 0;
                 registerTicks = false;
