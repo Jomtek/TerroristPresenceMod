@@ -17,6 +17,10 @@ namespace TerroristPresenceMod.Utils
         public static RelationshipGroup RELATIONSHIP_CIVMALE = new RelationshipGroup(0x02B8FA80);
         public static RelationshipGroup RELATIONSHIP_CIVFEMALE = new RelationshipGroup(0x47033600);
 
+        // At the demand of "PatrickNsyd"
+        public static RelationshipGroup RELATIONSHIP_ZOMBIE;
+        public static RelationshipGroup RELATIONSHIP_HOSTILE;
+
         // Terrorist spots
         public static Vector3 DESERT_POS = new Vector3(1353, 3227, 52);
         public static Vector3 MOUNTAIN_MINE_POS = new Vector3(-323, 4791, 141);

@@ -27,6 +27,8 @@ namespace TerroristPresenceMod
                 }
 
             GlobalInfo.RELATIONSHIP_TERRORIST = World.AddRelationshipGroup("TERRORIST");
+            GlobalInfo.RELATIONSHIP_ZOMBIE = World.AddRelationshipGroup("Zombie");
+            GlobalInfo.RELATIONSHIP_HOSTILE = World.AddRelationshipGroup("Hostile");
             RelationshipSetter.SetRelationships();
             
             XmlDocument doc = new XmlDocument();
