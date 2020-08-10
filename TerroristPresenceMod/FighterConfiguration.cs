@@ -4,13 +4,13 @@ namespace TerroristPresenceMod
 {
     class FighterConfiguration
     {
-        public PedHash pedHash;
-        public WeaponHash weapon;
+        public PedHash PedHash;
+        public WeaponHash Weapon;
 
         public FighterConfiguration(PedHash pedHash, WeaponHash weapon = WeaponHash.Unarmed)
         {
-            this.pedHash = pedHash;
-            this.weapon = weapon;
+            PedHash = pedHash;
+            Weapon = weapon;
         }
     }
 }

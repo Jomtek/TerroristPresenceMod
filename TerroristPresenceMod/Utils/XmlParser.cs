@@ -20,7 +20,7 @@ namespace TerroristPresenceMod.Utils
 
     class XmlParser
     {
-        public static TerroristZone parseZoneConfiguration(
+        public static TerroristZone ParseZoneConfiguration(
             XmlNodeList zoneConfig,
             ref List<string> encounteredNames,
             ref List<Vector3> encounteredPositions
@@ -91,7 +91,7 @@ namespace TerroristPresenceMod.Utils
                     posZ = Convert.ToInt32(node.InnerText);
 
                 if (!nodesList.Contains(node.Name))
-                    throw new XmlParsingException("Invalid XML file (unknown node '" + node.Name + "')");
+                    throw new XmlParsingException($"Invalid XML file (unknown node '{node.Name}')");
 
                 if (requiredNodes.Contains(node.Name))
                     requiredNodes.Remove(node.Name);
@@ -100,22 +100,22 @@ namespace TerroristPresenceMod.Utils
             var currentPos = new Vector3(posX, posY, posZ);
 
             foreach (Vector3 pos in encounteredPositions)
-                if (currentPos.DistanceTo(pos) < 100)
-                    throw new XmlParsingException("Zone '" + zoneName + "' is too close to another zone on the map.");
+                if (currentPos.DistanceTo(pos) < 20)
+                    throw new XmlParsingException($"Zone '{zoneName}' is too close to another zone on the map");
 
             encounteredPositions.Add(currentPos);
 
             if (requiredNodes.Count > 0)
-                throw new XmlParsingException("Missing node '" + requiredNodes[0] + "'");
+                throw new XmlParsingException($"Missing node '{requiredNodes[0]}'");
 
             if (encounteredNames.Contains(zoneName))
-                throw new XmlParsingException("Two zones cannot have the same name : '" + zoneName + "'");
+                throw new XmlParsingException($"Two zones cannot have the same name : '{zoneName}'");
             else
                 encounteredNames.Add(zoneName);
 
             return new TerroristZone(
                 currentPos, soldiersCount, zoneName, new FighterConfiguration(pedOutfit, weapon),
-                spawnRadius, spawnOnStreet, isZoneReclaimable
+                spawnRadius, spawnOnStreet, isZoneReclaimable, new FighterConfiguration(reclaimersOutfit, reclaimersWeapon)
             );
         }
     }

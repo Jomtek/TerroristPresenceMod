@@ -10,94 +10,96 @@ namespace TerroristPresenceMod
 {
     class TerroristZone
     {
-        public Vector3 zonePos { get; }
-        public string groupName { get; }
+        public Vector3 ZonePos { get; }
+        public string GroupName { get; }
 
-        public List<Ped> terrorists = new List<Ped>();
-        public int terroristsAmount;
-        public FighterConfiguration fighterCfg;
-        private List<Ped> deadTerrorists = new List<Ped>();
-        private int spawnRadius;
-        private bool spawnOnStreet;
-        private float blipScale;
+        public List<Ped> Terrorists = new List<Ped>();
+        public int TerroristsAmount;
+        public FighterConfiguration FighterCfg;
+        private List<Ped> DeadTerrorists = new List<Ped>();
+        private int SpawnRadius;
+        private bool SpawnOnStreet;
+        private float BlipScale;
 
-        private Blip zoneBlip;
-        public bool spawned = false;
-        public bool inactive = false;
-        public bool dangerous = false;
-        public bool capture = false;
+        private Blip ZoneBlip;
+        public bool Spawned = false;
+        public bool Inactive = false;
+        public bool Dangerous = false;
+        public bool Capture = false;
 
-        public bool isReclaimable = true;
-        public PedHash reclaimersOutfit;
-        public WeaponHash reclaimersWeapon;
+        public bool IsReclaimable = true;
+        public FighterConfiguration ReclaimersCfg;
 
-        private int zoneFarLimit;
-        private int zoneNearLimit;
+        private int ZoneFarLimit;
+        private int ZoneNearLimit;
 
-        private int ticksSinceZoneReclaim = 0;
-        private bool registerTicks = false;
+        private int TicksSinceZoneReclaim = 0;
+        private bool RegisterTicks = false;
 
         public TerroristZone(
             Vector3 zonePos, int terroristsAmount,
             string groupName, FighterConfiguration fighterCfg,
             int spawnRadius, bool spawnOnStreet = true, bool isReclaimable = true,
-            PedHash reclaimersOutfit = PedHash.Marine03SMY, WeaponHash reclaimersWeapon = WeaponHash.Unarmed,
-            float blipScale = 2.5f, int zoneFarLimit = 500, int zoneNearLimit = 350)
+            FighterConfiguration reclaimersCfg = null, float blipScale = 2.5f,
+            int zoneFarLimit = 500, int zoneNearLimit = 350)
         {
-            this.zonePos = zonePos;
-            this.terroristsAmount = terroristsAmount;
-            this.groupName = groupName;
-            this.fighterCfg = fighterCfg;
-            this.spawnRadius = spawnRadius;
-            this.spawnOnStreet = spawnOnStreet;
-            this.blipScale = blipScale;
-            this.zoneFarLimit = zoneFarLimit;
-            this.zoneNearLimit = zoneNearLimit;
+            ZonePos = zonePos;
+            TerroristsAmount = terroristsAmount;
+            GroupName = groupName;
+            FighterCfg = fighterCfg;
+            SpawnRadius = spawnRadius;
+            SpawnOnStreet = spawnOnStreet;
+            BlipScale = blipScale;
+            ZoneFarLimit = zoneFarLimit;
+            ZoneNearLimit = zoneNearLimit;
 
-            this.isReclaimable = isReclaimable;
-            this.reclaimersOutfit = reclaimersOutfit;
-            this.reclaimersWeapon = reclaimersWeapon;
+            IsReclaimable = isReclaimable;
+
+            if (reclaimersCfg == null)
+                ReclaimersCfg = fighterCfg;
+            else
+                ReclaimersCfg = reclaimersCfg;
         }
 
         public void InitBlip(bool declare = true)
         {
-            if (declare) this.zoneBlip = World.CreateBlip(this.zonePos);
-            this.zoneBlip.Name = "Terrorist Zone - " + this.groupName;
-            this.zoneBlip.Color = BlipColor.RedDark2;
-            this.zoneBlip.Scale = this.blipScale;
-            this.zoneBlip.IsShortRange = false;
+            if (declare) ZoneBlip = World.CreateBlip(ZonePos);
+            ZoneBlip.Name = "Terrorist Zone - " + GroupName;
+            ZoneBlip.Color = BlipColor.RedDark2;
+            ZoneBlip.Scale = BlipScale;
+            ZoneBlip.IsShortRange = false;
         }
 
         public void MarkBlipAsDangerous()
         {
-            this.zoneBlip.Name = "Dangerous Zone - " + this.groupName;
-            this.zoneBlip.Color = BlipColor.Orange; 
-            this.zoneBlip.Scale = this.blipScale * 1.2f;
-            this.zoneBlip.IsFlashing = true;
+            ZoneBlip.Name = "Dangerous Zone - " + GroupName;
+            ZoneBlip.Color = BlipColor.Orange; 
+            ZoneBlip.Scale = BlipScale * 1.2f;
+            ZoneBlip.IsFlashing = true;
         }
 
         public bool IsPlayerNearZone() =>
-            Game.Player.Character.Position.DistanceTo(this.zonePos) < this.zoneNearLimit;
+            Game.Player.Character.Position.DistanceTo(ZonePos) < ZoneNearLimit;
         public bool IsPlayerFarFromZone() =>
-            Game.Player.Character.Position.DistanceTo(this.zonePos) > this.zoneFarLimit;
+            Game.Player.Character.Position.DistanceTo(ZonePos) > ZoneFarLimit;
 
         public void DeleteTerrorists()
         {
-            foreach (Ped terrorist in terrorists)
+            foreach (Ped terrorist in Terrorists)
             {
                 terrorist.AttachedBlip.Delete();
                 terrorist.Delete();
             }
 
-            terrorists.Clear();
-            spawned = false;
+            Terrorists.Clear();
+            Spawned = false;
         }
 
         public void ManageDeadTerrorists()
         {
             var removedTerrorists = new List<Ped>();
 
-            foreach (Ped terrorist in this.terrorists)
+            foreach (Ped terrorist in Terrorists)
                 if (!terrorist.IsAlive)
                 {
                     if (terrorist.AttachedBlip != null) terrorist.AttachedBlip.Delete();
@@ -106,48 +108,52 @@ namespace TerroristPresenceMod
 
             foreach (Ped terrorist in removedTerrorists)
             {
-                this.terrorists.Remove(terrorist);
-                this.deadTerrorists.Add(terrorist);
+                Terrorists.Remove(terrorist);
+                DeadTerrorists.Add(terrorist);
             }
 
-            if (this.terrorists.Count == 0)
+            if (Terrorists.Count == 0)
             {
-                ScreenEffects.ZoneCaptured();
-                Screen.ShowSubtitle("Congratulations - " + this.groupName + " (" + this.terroristsAmount + " soldiers) defeated", 15000);
+                Screen.ShowSubtitle("Congratulations - " + GroupName + " (" + TerroristsAmount + " soldiers) defeated", 15000);
 
-                this.zoneBlip.Color = BlipColor.GreenDark;
-                this.zoneBlip.IsFlashing = false;
-                this.zoneBlip.ShowRoute = false;
-                this.zoneBlip.Scale = 2.5f;
-                this.zoneBlip.Name = "Safe Zone - " + this.groupName;
-                this.dangerous = false;
-                this.inactive = true;
-                this.capture = false;
+                ZoneBlip.Color = BlipColor.GreenDark;
+                ZoneBlip.IsFlashing = false;
+                ZoneBlip.ShowRoute = false;
+                ZoneBlip.Scale = 2.5f;
+                ZoneBlip.Name = "Safe Zone - " + GroupName;
+                Dangerous = false;
+                Inactive = true;
+                Capture = false;
             }
         }
 
         public int ClearDeadEntities()
         {
-            int deletedEntities = deadTerrorists.Count;
-            foreach (Ped terrorist in deadTerrorists) terrorist.Delete();
-            deadTerrorists.Clear();
+            int deletedEntities = DeadTerrorists.Count;
+            foreach (Ped terrorist in DeadTerrorists) terrorist.Delete();
+            DeadTerrorists.Clear();
 
             return deletedEntities;
         }
 
         public void SpawnTerrorist()
         {
+            Vector3 spawnPos;
+            if (SpawnOnStreet)
+                spawnPos = World.GetNextPositionOnStreet(ZonePos.Around(SpawnRadius));
+            else
+                spawnPos = World.GetNextPositionOnSidewalk(ZonePos.Around(SpawnRadius));
+
             Ped ped = World.CreatePed(
-                this.fighterCfg.pedHash,
-                spawnOnStreet ? World.GetNextPositionOnStreet(this.zonePos.Around(this.spawnRadius)) : World.GetNextPositionOnSidewalk(this.zonePos.Around(this.spawnRadius))
+                FighterCfg.PedHash,
+                spawnPos
             );
 
-            WeaponHash weapon = WeaponHash.Unarmed;
-
-            if (this.fighterCfg.weapon == WeaponHash.Unarmed)
+            WeaponHash weapon;
+            if (FighterCfg.Weapon == WeaponHash.Unarmed)
                 weapon = GlobalInfo.weaponsList[GlobalInfo.generalRandomInstance.Next(0, GlobalInfo.weaponsList.Count)];
             else
-                weapon = this.fighterCfg.weapon;
+                weapon = FighterCfg.Weapon;
 
             ped.Weapons.Give(weapon, -1, true, true);
             ped.Accuracy = 35;
@@ -164,19 +170,19 @@ namespace TerroristPresenceMod
             if (ped.AttachedBlip != null)
                 ped.AttachedBlip.Color = BlipColor.GreyDark;
 
-            terrorists.Add(ped);
+            Terrorists.Add(ped);
         }
 
         public void SpawnTerrorists()
         {
-            if (!spawned)
-                spawned = true;
+            if (!Spawned)
+                Spawned = true;
             else
                 throw new Exception("Group already spawned");
 
             try
             {
-                for (int i = 1; i < this.terroristsAmount; i++)
+                for (int i = 1; i < TerroristsAmount; i++)
                     SpawnTerrorist();
             } catch (Exception ex)
             {   
@@ -188,55 +194,51 @@ namespace TerroristPresenceMod
         {
             terrorist.AttachedBlip.Delete();
             terrorist.Delete();
-            this.terrorists.Remove(terrorist);
+            Terrorists.Remove(terrorist);
         }
 
         public void ZoneReclaimedTick()
         {
-            if (!dangerous && inactive && GlobalInfo.generalRandomInstance.Next(0, 50) == 0)
+            if (!Dangerous && Inactive && GlobalInfo.generalRandomInstance.Next(0, 50) == 0)
             {
-                ScreenEffects.ZoneReclaimed();
-
                 MarkBlipAsDangerous();
-                spawned = false;
-                inactive = false;
-                dangerous = true;
+                Spawned = false;
+                Inactive = false;
+                Dangerous = true;
 
-                if (Convert.ToInt32(terroristsAmount * 0.8) > 5)
-                    terroristsAmount = Convert.ToInt32(terroristsAmount * 0.8);
+                if (Convert.ToInt32(TerroristsAmount * 0.8) > 5)
+                    TerroristsAmount = Convert.ToInt32(TerroristsAmount * 0.8);
                 else
-                    terroristsAmount = 5;
+                    TerroristsAmount = 5;
 
-                fighterCfg = new FighterConfiguration(reclaimersOutfit, reclaimersWeapon);
-                GTA.UI.Screen.ShowSubtitle(groupName + " zone is being reclaimed !", 8000);
+                FighterCfg = ReclaimersCfg;
+                Screen.ShowSubtitle(GroupName + " zone is being reclaimed !", 8000);
 
-                registerTicks = true;
+                RegisterTicks = true;
             }
         }   
 
         public bool ZoneLostTick()
         {
-            if (registerTicks)
-                ticksSinceZoneReclaim++;
+            if (RegisterTicks)
+                TicksSinceZoneReclaim++;
 
-            if (dangerous && !capture && ticksSinceZoneReclaim == 2)
+            if (Dangerous && !Capture && TicksSinceZoneReclaim == 2)
             {
-                ScreenEffects.ZoneLost();
-
                 InitBlip(false);
-                inactive = false;
-                spawned = false;
-                dangerous = false;
+                Inactive = false;
+                Spawned = false;
+                Dangerous = false;
 
-                if (Convert.ToInt32(terroristsAmount * 1.4) <= 100)
-                    terroristsAmount = Convert.ToInt32(terroristsAmount * 1.4);
+                if (Convert.ToInt32(TerroristsAmount * 1.4) <= 100)
+                    TerroristsAmount = Convert.ToInt32(TerroristsAmount * 1.4);
                 else
-                    terroristsAmount = 100;
+                    TerroristsAmount = 100;
 
-                ticksSinceZoneReclaim = 0;
-                registerTicks = false;
+                TicksSinceZoneReclaim = 0;
+                RegisterTicks = false;
 
-                GTA.UI.Screen.ShowSubtitle(groupName + " zone was lost - terrorists are now stronger !", 10000);
+                Screen.ShowSubtitle(GroupName + " zone was lost - terrorists are now stronger !", 10000);
                 return true;
             }
 

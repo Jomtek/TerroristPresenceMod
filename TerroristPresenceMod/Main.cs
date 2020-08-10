@@ -40,7 +40,7 @@ namespace TerroristPresenceMod
             try
             {
                 foreach (XmlNode zoneNode in doc.DocumentElement.ChildNodes)
-                    terroristZones.Add(XmlParser.parseZoneConfiguration(zoneNode.ChildNodes, ref encounteredNames, ref encounteredPositions));
+                    terroristZones.Add(XmlParser.ParseZoneConfiguration(zoneNode.ChildNodes, ref encounteredNames, ref encounteredPositions));
             } catch (XmlParsingException ex)
             {
                 GTA.UI.Screen.ShowSubtitle("[TerroristPresence] Invalid XML file : " + ex.Message, 10000);
@@ -60,17 +60,17 @@ namespace TerroristPresenceMod
             {
                 int clearedEntities = 0;
                 foreach (TerroristZone zone in terroristZones)
-                    if (zone.spawned)
+                    if (zone.Spawned)
                         clearedEntities += zone.ClearDeadEntities();
 
                 if (clearedEntities > 0)
-                    GTA.UI.Notification.Show(clearedEntities + " dead entities cleared");
+                    Notification.Show(clearedEntities + " dead entities cleared");
 
                 foreach (TerroristZone zone in terroristZones)
-                    if (zone.spawned)
-                        for (int i = 0; i < zone.terrorists.Count; i++)
+                    if (zone.Spawned)
+                        for (int i = 0; i < zone.Terrorists.Count; i++)
                         {
-                            Ped terrorist = zone.terrorists[i];
+                            Ped terrorist = zone.Terrorists[i];
 
                             if ((!terrorist.IsWalking && !terrorist.IsInCombat && !terrorist.IsInCover) || !terrorist.IsVisible)
                             {
@@ -95,24 +95,22 @@ namespace TerroristPresenceMod
 
         private void OnTick(object sender, EventArgs e)
         {
-            ScreenEffects.Tick();
-
             if (spawnZonesDelay == 0)
             {
                 foreach (TerroristZone zone in terroristZones)
                 {
-                    if (zone.inactive) continue;
+                    if (zone.Inactive) continue;
 
-                    if (!zone.spawned)
+                    if (!zone.Spawned)
                     {
                         if (zone.IsPlayerNearZone())
                         {
                             foreach (TerroristZone z in terroristZones)
                                 z.ClearDeadEntities();
 
-                            GTA.UI.Screen.ShowSubtitle("Radar message - Entering a zone controlled by " + zone.groupName + " terrorists");
+                            GTA.UI.Screen.ShowSubtitle("Radar message - Entering a zone controlled by " + zone.GroupName + " terrorists");
                             zone.SpawnTerrorists();
-                            zone.capture = true;
+                            zone.Capture = true;
 
                             Notification.Show("! We've been informed that terrorists are near your position !", true);
                             break;
@@ -122,9 +120,9 @@ namespace TerroristPresenceMod
                     {
                         zone.DeleteTerrorists();
                         zone.ClearDeadEntities();
-                        zone.capture = false;
+                        zone.Capture = false;
                         
-                        GTA.UI.Screen.ShowSubtitle("Radar message - Leaving " + zone.groupName + " zone");
+                        GTA.UI.Screen.ShowSubtitle("Radar message - Leaving " + zone.GroupName + " zone");
                         break;
                     }
                 }   
@@ -139,7 +137,7 @@ namespace TerroristPresenceMod
             if (deadSoldiersManageDelay == 0)
             {
                 foreach (TerroristZone zone in terroristZones)
-                    if (zone.spawned && !zone.inactive)
+                    if (zone.Spawned && !zone.Inactive)
                         zone.ManageDeadTerrorists();
 
                 deadSoldiersManageDelay = 50;
@@ -156,10 +154,10 @@ namespace TerroristPresenceMod
                     for (int i = 0; i < terroristZones.Count; i++)
                     {
                         TerroristZone zone = terroristZones[i];
-                        if (zone.spawned && !zone.inactive)
-                            for (int k = 0; k < zone.terrorists.Count; k++)
+                        if (zone.Spawned && !zone.Inactive)
+                            for (int k = 0; k < zone.Terrorists.Count; k++)
                             {
-                                Ped terrorist = zone.terrorists[k];
+                                Ped terrorist = zone.Terrorists[k];
                                 if (terrorist.Position.X == 0)
                                 {
                                     zone.DeleteTerrorists();
@@ -182,7 +180,7 @@ namespace TerroristPresenceMod
             if (zonesReclaimedDelay == 0)
             {
                 foreach (TerroristZone zone in terroristZones)
-                    if (zone.isReclaimable)
+                    if (zone.IsReclaimable)
                         zone.ZoneReclaimedTick();
 
                 zonesReclaimedDelay = 375;
@@ -194,7 +192,7 @@ namespace TerroristPresenceMod
             if (zonesLostDelay == 0)
             {
                 foreach (TerroristZone zone in terroristZones)
-                    if (zone.isReclaimable)
+                    if (zone.IsReclaimable)
                         if (zone.ZoneLostTick())
                             break;
 
