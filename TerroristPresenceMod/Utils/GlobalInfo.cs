@@ -1,11 +1,10 @@
 ﻿using GTA;
-using GTA.Math;
 using System;
 using System.Collections.Generic;
 
 namespace TerroristPresenceMod.Utils
 {
-    class GlobalInfo
+    public static class GlobalInfo
     {
         // Relationship Groups
         public static RelationshipGroup RELATIONSHIP_TERRORIST;
@@ -21,20 +20,27 @@ namespace TerroristPresenceMod.Utils
         public static RelationshipGroup RELATIONSHIP_ZOMBIE;
         public static RelationshipGroup RELATIONSHIP_HOSTILE;
 
-        // Terrorist spots
-        public static Vector3 DESERT_POS = new Vector3(1353, 3227, 52);
-        public static Vector3 MOUNTAIN_MINE_POS = new Vector3(-323, 4791, 141);
-        public static List<int> soldiersBlipsHandles = new List<int>();
+        // Zones capture state
+        public static List<string> CapturedZonesNames;
 
-       // Other
-        public static Random generalRandomInstance = new Random();
+        // Other
+        public static List<int> SoldiersBlipsHandles = new List<int>();
+        public static Random GeneralRandomInstance = new Random();
 
-        public static List<WeaponHash> weaponsList = new List<WeaponHash> {
+        public static List<WeaponHash> WeaponsList = new List<WeaponHash> {
             WeaponHash.HeavySniper,
             WeaponHash.RPG,
             WeaponHash.AssaultRifle,
             WeaponHash.DoubleBarrelShotgun,
             WeaponHash.Minigun
         };
+
+
+        // // FUNCTIONS // //
+
+        public static void SaveCapturedZones()
+        {
+            System.IO.File.WriteAllLines("scripts/TPM/CapturedZones.txt", CapturedZonesNames);
+        }
     }
 }

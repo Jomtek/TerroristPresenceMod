@@ -4,6 +4,8 @@ using GTA.Native;
 using GTA.UI;
 using System;
 using System.Collections.Generic;
+using System.Security.Permissions;
+using System.Security.Principal;
 using TerroristPresenceMod.Utils;
 
 namespace TerroristPresenceMod
@@ -13,60 +15,70 @@ namespace TerroristPresenceMod
         public Vector3 ZonePos { get; }
         public string GroupName { get; }
 
-        public List<Ped> Terrorists = new List<Ped>();
-        public int TerroristsAmount;
-        public FighterConfiguration FighterCfg;
-        private List<Ped> DeadTerrorists = new List<Ped>();
-        private int SpawnRadius;
-        private bool SpawnOnStreet;
-        private float BlipScale;
+        public bool IsReclaimable = true;
 
-        private Blip ZoneBlip;
+        // Troop info
+        public List<Terrorist> Terrorists = new List<Terrorist>();
+        public List<Vehicle> Vehicles = new List<Vehicle>();
+        private List<Terrorist> _DeadTerrorists = new List<Terrorist>();
+
+        // Spawn info
+        public FighterConfiguration FighterCfg;
+        public FighterConfiguration ReclaimerCfg;
+        private int _SpawnRadius;
+        private bool _SpawnOnStreet;
+
+        // Zone state info
+        public int TerroristsAmount;
         public bool Spawned = false;
         public bool Inactive = false;
         public bool Dangerous = false;
         public bool Capture = false;
+        public bool ReinforcementsSent = false;
 
-        public bool IsReclaimable = true;
-        public FighterConfiguration ReclaimersCfg;
+        // Blip info
+        public Blip ZoneBlip;
+        public BlipColor CurrentSoldierBlipColor = BlipColor.GreyDark;
 
-        private int ZoneFarLimit;
-        private int ZoneNearLimit;
+        // Ticks
+        private int _TicksSinceZoneReclaim = 0;
+        private bool _RegisterTicks = false;
 
-        private int TicksSinceZoneReclaim = 0;
-        private bool RegisterTicks = false;
+        // / / / //
 
         public TerroristZone(
             Vector3 zonePos, int terroristsAmount,
             string groupName, FighterConfiguration fighterCfg,
             int spawnRadius, bool spawnOnStreet = true, bool isReclaimable = true,
-            FighterConfiguration reclaimersCfg = null, float blipScale = 2.5f,
-            int zoneFarLimit = 500, int zoneNearLimit = 350)
+            FighterConfiguration reclaimersCfg = null)
         {
             ZonePos = zonePos;
             TerroristsAmount = terroristsAmount;
             GroupName = groupName;
             FighterCfg = fighterCfg;
-            SpawnRadius = spawnRadius;
-            SpawnOnStreet = spawnOnStreet;
-            BlipScale = blipScale;
-            ZoneFarLimit = zoneFarLimit;
-            ZoneNearLimit = zoneNearLimit;
+            _SpawnRadius = spawnRadius;
+            _SpawnOnStreet = spawnOnStreet;
 
             IsReclaimable = isReclaimable;
 
             if (reclaimersCfg == null)
-                ReclaimersCfg = fighterCfg;
+                ReclaimerCfg = fighterCfg;
             else
-                ReclaimersCfg = reclaimersCfg;
+                ReclaimerCfg = reclaimersCfg;
         }
 
-        public void InitBlip(bool declare = true)
+        public bool IsPlayerNearZone() =>
+            Game.Player.Character.Position.DistanceTo(ZonePos) < 330;
+        public bool IsPlayerFarFromZone() =>
+            Game.Player.Character.Position.DistanceTo(ZonePos) > 675;
+
+        #region ZoneBlip
+        public void InitBlip(bool init = true)
         {
-            if (declare) ZoneBlip = World.CreateBlip(ZonePos);
+            if (init) ZoneBlip = World.CreateBlip(ZonePos);
             ZoneBlip.Name = "Terrorist Zone - " + GroupName;
             ZoneBlip.Color = BlipColor.RedDark2;
-            ZoneBlip.Scale = BlipScale;
+            ZoneBlip.Scale = 2.5f;
             ZoneBlip.IsShortRange = false;
         }
 
@@ -74,103 +86,25 @@ namespace TerroristPresenceMod
         {
             ZoneBlip.Name = "Dangerous Zone - " + GroupName;
             ZoneBlip.Color = BlipColor.Orange; 
-            ZoneBlip.Scale = BlipScale * 1.2f;
+            ZoneBlip.Scale = 3.5f;
             ZoneBlip.IsFlashing = true;
         }
+        #endregion
 
-        public bool IsPlayerNearZone() =>
-            Game.Player.Character.Position.DistanceTo(ZonePos) < ZoneNearLimit;
-        public bool IsPlayerFarFromZone() =>
-            Game.Player.Character.Position.DistanceTo(ZonePos) > ZoneFarLimit;
-
-        public void DeleteTerrorists()
-        {
-            foreach (Ped terrorist in Terrorists)
-            {
-                terrorist.AttachedBlip.Delete();
-                terrorist.Delete();
-            }
-
-            Terrorists.Clear();
-            Spawned = false;
-        }
-
-        public void ManageDeadTerrorists()
-        {
-            var removedTerrorists = new List<Ped>();
-
-            foreach (Ped terrorist in Terrorists)
-                if (!terrorist.IsAlive)
-                {
-                    if (terrorist.AttachedBlip != null) terrorist.AttachedBlip.Delete();
-                    removedTerrorists.Add(terrorist);
-                }
-
-            foreach (Ped terrorist in removedTerrorists)
-            {
-                Terrorists.Remove(terrorist);
-                DeadTerrorists.Add(terrorist);
-            }
-
-            if (Terrorists.Count == 0)
-            {
-                Screen.ShowSubtitle("Congratulations - " + GroupName + " (" + TerroristsAmount + " soldiers) defeated", 15000);
-
-                ZoneBlip.Color = BlipColor.GreenDark;
-                ZoneBlip.IsFlashing = false;
-                ZoneBlip.ShowRoute = false;
-                ZoneBlip.Scale = 2.5f;
-                ZoneBlip.Name = "Safe Zone - " + GroupName;
-                Dangerous = false;
-                Inactive = true;
-                Capture = false;
-            }
-        }
-
-        public int ClearDeadEntities()
-        {
-            int deletedEntities = DeadTerrorists.Count;
-            foreach (Ped terrorist in DeadTerrorists) terrorist.Delete();
-            DeadTerrorists.Clear();
-
-            return deletedEntities;
-        }
+        #region Spawning
 
         public void SpawnTerrorist()
         {
             Vector3 spawnPos;
-            if (SpawnOnStreet)
-                spawnPos = World.GetNextPositionOnStreet(ZonePos.Around(SpawnRadius));
+            if (_SpawnOnStreet)
+                spawnPos = World.GetNextPositionOnStreet(ZonePos.Around(_SpawnRadius));
             else
-                spawnPos = World.GetNextPositionOnSidewalk(ZonePos.Around(SpawnRadius));
+                spawnPos = World.GetNextPositionOnSidewalk(ZonePos.Around(_SpawnRadius));
 
-            Ped ped = World.CreatePed(
-                FighterCfg.PedHash,
-                spawnPos
-            );
-
-            WeaponHash weapon;
-            if (FighterCfg.Weapon == WeaponHash.Unarmed)
-                weapon = GlobalInfo.weaponsList[GlobalInfo.generalRandomInstance.Next(0, GlobalInfo.weaponsList.Count)];
-            else
-                weapon = FighterCfg.Weapon;
-
-            ped.Weapons.Give(weapon, -1, true, true);
-            ped.Accuracy = 35;
-            ped.MaxHealth = 200;
-            ped.Health = 200;
-            ped.Armor = 100;
-            ped.Task.WanderAround();
-            ped.RelationshipGroup = GlobalInfo.RELATIONSHIP_TERRORIST;
-
-            Function.Call(Hash.SET_PED_HEARING_RANGE, ped, 3000f);
-            Function.Call(Hash.SET_PED_SEEING_RANGE, ped, 3000f);
-
-            ped.AddBlip();
-            if (ped.AttachedBlip != null)
-                ped.AttachedBlip.Color = BlipColor.GreyDark;
-
-            Terrorists.Add(ped);
+            var terrorist = new Terrorist(FighterCfg, CurrentSoldierBlipColor);
+            terrorist.Spawn(spawnPos);
+            terrorist.Configure();
+            Terrorists.Add(terrorist);
         }
 
         public void SpawnTerrorists()
@@ -183,23 +117,200 @@ namespace TerroristPresenceMod
             try
             {
                 for (int i = 1; i < TerroristsAmount; i++)
-                    SpawnTerrorist();
+                {
+                    SpawnTerrorist();            
+                }
             } catch (Exception ex)
             {   
                 Notification.Show(ex.StackTrace);
             }
         }
 
-        public void DeleteTerrorist(Ped terrorist)
+        private void SpawnReinforcements()
         {
-            terrorist.AttachedBlip.Delete();
-            terrorist.Delete();
+            WipeGTAMemory();
+            for (int i = 0; i < 1; i++)
+            {
+                var fighters = new List<Terrorist>();
+
+                foreach (VehicleHash hash in new VehicleHash[2] {
+                        VehicleHash.Technical,
+                        VehicleHash.Technical,
+                        //VehicleHash.Defiler
+                    })
+                {
+                    // Configure vehicule
+                    Vector3 vehiclePos = World.GetNextPositionOnStreet(ZonePos.Around(550));
+
+                    while (World.CalculateTravelDistance(ZonePos, vehiclePos) > 650)
+                    {
+                        vehiclePos = World.GetNextPositionOnStreet(ZonePos.Around(550));
+                    }
+
+                    Vehicle vehicle =
+                        World.CreateVehicle(hash, vehiclePos);
+
+                    Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, vehicle, 4);
+                    vehicle.IsPersistent = true;
+                    vehicle.Heading = (Game.Player.Character.Position - vehicle.Position).ToHeading();
+                    Vehicles.Add(vehicle);
+
+                    // Spawn driver
+                    var driver = new Terrorist(FighterCfg, CurrentSoldierBlipColor);
+                    driver.Ped = vehicle.CreatePedOnSeat(VehicleSeat.Driver, FighterCfg.PedHash);
+                    driver.Configure(false);
+
+                    // Spawn passengers
+                    if (hash != VehicleHash.Defiler)
+                    {
+                        foreach (VehicleSeat seat in new VehicleSeat[2] {
+                            VehicleSeat.RightFront,
+                            VehicleSeat.LeftRear
+                        })
+                        {
+                            var passenger = new Terrorist(FighterCfg, CurrentSoldierBlipColor);
+                            passenger.Ped = vehicle.CreatePedOnSeat(seat, FighterCfg.PedHash);
+                            passenger.Configure();
+
+                            Terrorists.Add(passenger);
+                            fighters.Add(passenger);
+                        }
+                    }
+
+                    //if (Game.Player.Character.IsInVehicle() ||
+                    //    Game.Player.Character.Position.DistanceTo(vehicle.Position) > 50)
+                    //{
+                        driver.Ped.Task.DriveTo(vehicle, ZonePos, 5, 10, DrivingStyle.Rushed);
+                        foreach (Terrorist fighter in fighters)
+                            fighter.Ped.Task.VehicleShootAtPed(Game.Player.Character);
+                    //}
+                    /*else // TODO
+                    {
+                        driver.Ped.Task.FightAgainst(Game.Player.Character);
+                        foreach (Terrorist fighter in fighters)
+                            fighter.Ped.Task.FightAgainst(Game.Player.Character);
+                    }*/
+
+                    Terrorists.Add(driver);
+                }
+            }
+            ReinforcementsSent = true;
+        }
+        #endregion
+
+        #region Deletion
+        public void DeleteTerrorist(Terrorist terrorist)
+        {
             Terrorists.Remove(terrorist);
+            terrorist.Delete();
         }
 
+        public void DeleteTerrorists()
+        {
+            //foreach (var terrorist in Terrorists)
+            //    terrorist.Delete();
+            //Terrorists.Clear();
+
+            foreach (var terrorist in Terrorists)
+            {
+                terrorist.Ped.AttachedBlip.Delete();
+                terrorist.Ped.Delete();
+            }
+
+            Terrorists.Clear();
+
+            Spawned = false;
+        }
+
+        public int WipeGTAMemory()
+        {
+            int releasedEntities =
+                _DeadTerrorists.Count + Vehicles.Count;
+
+            foreach (Vehicle vehicle in Vehicles)
+                vehicle.MarkAsNoLongerNeeded();
+
+            // Terrorist peds are automatically wiped
+
+            _DeadTerrorists.Clear();
+            Vehicles.Clear();
+
+            foreach (var entity in World.GetNearbyEntities(Game.Player.Character.Position, 250))
+            {
+                if (entity is Ped)
+                {
+                    var ped = (Ped)entity;
+                    if (!ped.IsAlive)
+                    {
+                        ped.MarkAsNoLongerNeeded();
+                        releasedEntities ++;
+                    }
+                }
+            }
+
+            return releasedEntities;
+        }
+        #endregion
+
+        public void SetCaptured(bool fromConfigFile = false)
+        {
+            ZoneBlip.Color = BlipColor.GreenDark;
+            ZoneBlip.IsFlashing = false;
+            ZoneBlip.Scale = 2.25f;
+            ZoneBlip.Name = "Safe Zone - " + GroupName;
+
+            Dangerous = false;
+            Inactive = true;
+            Capture = false;
+        
+            if (!fromConfigFile)
+            {
+                GlobalInfo.CapturedZonesNames.Add(GroupName);
+                GlobalInfo.SaveCapturedZones();
+            }
+        }
+
+        public void ManageDeadTerrorists()
+        {
+            var removedTerrorists = new List<Terrorist>();
+
+            foreach (var terrorist in Terrorists)
+                if (!terrorist.Ped.IsAlive)
+                {
+                    if (terrorist.Ped.AttachedBlip != null) terrorist.Ped.AttachedBlip.Delete();
+                    removedTerrorists.Add(terrorist);
+                }
+
+            foreach (var terrorist in removedTerrorists)
+            {
+                Terrorists.Remove(terrorist);
+                _DeadTerrorists.Add(terrorist);
+                terrorist.Ped.MarkAsNoLongerNeeded();
+            }
+
+            /*if (Terrorists.Count < 5 && TerroristsAmount >= 5 && !ReinforcementsSent)
+            {
+                CurrentSoldierBlipColor = BlipColor.Orange;
+                ZoneBlip.IsFlashing = true;
+                Screen.ShowSubtitle("Reinforcements incoming !", 5000);
+                SpawnReinforcements();
+                return;
+            }*/
+
+            if (Terrorists.Count == 0)
+            {
+                if (ReinforcementsSent)
+                    CurrentSoldierBlipColor = BlipColor.GreyDark;
+
+                Screen.ShowSubtitle("Congratulations - " + GroupName + " (" + TerroristsAmount + " soldiers) defeated", 15000);
+                SetCaptured();
+            }
+        }
+
+        #region Ticks
         public void ZoneReclaimedTick()
         {
-            if (!Dangerous && Inactive && GlobalInfo.generalRandomInstance.Next(0, 50) == 0)
+            if (!Dangerous && Inactive && GlobalInfo.GeneralRandomInstance.Next(0, 50) == 0)
             {
                 MarkBlipAsDangerous();
                 Spawned = false;
@@ -211,32 +322,37 @@ namespace TerroristPresenceMod
                 else
                     TerroristsAmount = 5;
 
-                FighterCfg = ReclaimersCfg;
-                Screen.ShowSubtitle(GroupName + " zone is being reclaimed !", 8000);
+                FighterCfg = ReclaimerCfg;
+                _RegisterTicks = true;
 
-                RegisterTicks = true;
+                GlobalInfo.CapturedZonesNames.Remove(GroupName);
+                GlobalInfo.SaveCapturedZones();
+
+                Screen.ShowSubtitle(GroupName + " zone is being reclaimed !", 8000);
             }
         }   
 
         public bool ZoneLostTick()
         {
-            if (RegisterTicks)
-                TicksSinceZoneReclaim++;
+            if (_RegisterTicks)
+                _TicksSinceZoneReclaim++;
 
-            if (Dangerous && !Capture && TicksSinceZoneReclaim == 2)
+            if (Dangerous && !Capture && _TicksSinceZoneReclaim == 2)
             {
                 InitBlip(false);
                 Inactive = false;
                 Spawned = false;
                 Dangerous = false;
 
-                if (Convert.ToInt32(TerroristsAmount * 1.4) <= 100)
-                    TerroristsAmount = Convert.ToInt32(TerroristsAmount * 1.4);
+                if (Convert.ToInt32(TerroristsAmount * 1.5) <= 100)
+                    TerroristsAmount = Convert.ToInt32(TerroristsAmount * 1.5);
                 else
                     TerroristsAmount = 100;
 
-                TicksSinceZoneReclaim = 0;
-                RegisterTicks = false;
+                _TicksSinceZoneReclaim = 0;
+                _RegisterTicks = false;
+                GlobalInfo.CapturedZonesNames.Remove(GroupName);
+                GlobalInfo.SaveCapturedZones();
 
                 Screen.ShowSubtitle(GroupName + " zone was lost - terrorists are now stronger !", 10000);
                 return true;
@@ -244,5 +360,6 @@ namespace TerroristPresenceMod
 
             return false;
         }
+        #endregion
     }   
 }

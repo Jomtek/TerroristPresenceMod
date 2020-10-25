@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using GTA;
 using GTA.UI;
@@ -26,13 +27,25 @@ namespace TerroristPresenceMod
                     blip.Delete();
                 }
 
+
             GlobalInfo.RELATIONSHIP_TERRORIST = World.AddRelationshipGroup("TERRORIST");
             GlobalInfo.RELATIONSHIP_ZOMBIE = World.AddRelationshipGroup("Zombie");
             GlobalInfo.RELATIONSHIP_HOSTILE = World.AddRelationshipGroup("Hostile");
             RelationshipSetter.SetRelationships();
-            
+
             XmlDocument doc = new XmlDocument();
-            doc.Load("scripts/TerroristPresenceMod.xml");
+            doc.Load("scripts/TPM/TerroristZones.xml");
+
+            if (!File.Exists("scripts/TPM/CapturedZones.txt"))
+            {
+                GTA.UI.Screen.ShowSubtitle("[TerroristPresence] Missing file CapturedZones.txt");
+                return;
+            }
+            else
+            {
+                string[] capturedZonesNames = File.ReadAllLines("scripts/TPM/CapturedZones.txt");
+                GlobalInfo.CapturedZonesNames = new List<string>(capturedZonesNames);
+            }
 
             var encounteredNames = new List<string>();
             var encounteredPositions = new List<Vector3>();
@@ -48,7 +61,13 @@ namespace TerroristPresenceMod
             }
 
             foreach (TerroristZone zone in terroristZones)
+            {
                 zone.InitBlip();
+                if (GlobalInfo.CapturedZonesNames.Contains(zone.GroupName))
+                {
+                    zone.SetCaptured(true);
+                }
+            }
 
             Tick += OnTick;
             KeyDown += OnKeyDown;
@@ -61,18 +80,21 @@ namespace TerroristPresenceMod
                 int clearedEntities = 0;
                 foreach (TerroristZone zone in terroristZones)
                     if (zone.Spawned)
-                        clearedEntities += zone.ClearDeadEntities();
+                        clearedEntities += zone.WipeGTAMemory();
 
                 if (clearedEntities > 0)
-                    Notification.Show(clearedEntities + " dead entities cleared");
+                    Notification.Show(clearedEntities + " entities removed from memory");
 
                 foreach (TerroristZone zone in terroristZones)
                     if (zone.Spawned)
                         for (int i = 0; i < zone.Terrorists.Count; i++)
                         {
-                            Ped terrorist = zone.Terrorists[i];
+                            var terrorist = zone.Terrorists[i];
 
-                            if ((!terrorist.IsWalking && !terrorist.IsInCombat && !terrorist.IsInCover) || !terrorist.IsVisible)
+                            if ((!terrorist.Ped.IsWalking &&
+                                !terrorist.Ped.IsInVehicle() &&
+                                !terrorist.Ped.IsInCombat &&
+                                !terrorist.Ped.IsInCover) || !terrorist.Ped.IsVisible)
                             {
                                 zone.DeleteTerrorist(terrorist);
                                 zone.SpawnTerrorist();
@@ -90,8 +112,8 @@ namespace TerroristPresenceMod
         private int deadSoldiersManageDelay = 50;
         private int soldiersPositionFixDelay = 250;
         
-        private int zonesReclaimedDelay = 4500;
-        private int zonesLostDelay = 10000;
+        private int zonesReclaimedDelay = 14000;
+        private int zonesLostDelay = 15000;
 
         private void OnTick(object sender, EventArgs e)
         {
@@ -106,24 +128,37 @@ namespace TerroristPresenceMod
                         if (zone.IsPlayerNearZone())
                         {
                             foreach (TerroristZone z in terroristZones)
-                                z.ClearDeadEntities();
+                                z.WipeGTAMemory();
 
-                            GTA.UI.Screen.ShowSubtitle("Radar message - Entering a zone controlled by " + zone.GroupName + " terrorists");
+                            RadarAlert.EnteringZone(zone.GroupName);
                             zone.SpawnTerrorists();
                             zone.Capture = true;
 
-                            Notification.Show("! We've been informed that terrorists are near your position !", true);
-                            break;
+                            //break;
                         }
-                    }
-                    else if (zone.IsPlayerFarFromZone())
+                    } else if (zone.IsPlayerFarFromZone())
                     {
                         zone.DeleteTerrorists();
-                        zone.ClearDeadEntities();
+                        zone.WipeGTAMemory();
                         zone.Capture = false;
-                        
-                        GTA.UI.Screen.ShowSubtitle("Radar message - Leaving " + zone.GroupName + " zone");
-                        break;
+
+                        RadarAlert.LeavingZone(zone.GroupName);
+                        //break;
+                    } else
+                    {
+                        foreach (var vehicle in zone.Vehicles)
+                        {
+                            if (Game.Player.Character.Position.DistanceTo(vehicle.Position) > 100)
+                            {
+                                vehicle.Driver.Task.DriveTo(
+                                    vehicle,
+                                    zone.ZonePos,
+                                    5,
+                                    10,
+                                    DrivingStyle.Rushed
+                                );
+                            }
+                        }
                     }
                 }   
 
@@ -154,11 +189,11 @@ namespace TerroristPresenceMod
                     for (int i = 0; i < terroristZones.Count; i++)
                     {
                         TerroristZone zone = terroristZones[i];
-                        if (zone.Spawned && !zone.Inactive)
+                        if (zone.Spawned && !zone.Inactive && !zone.ReinforcementsSent)
                             for (int k = 0; k < zone.Terrorists.Count; k++)
                             {
-                                Ped terrorist = zone.Terrorists[k];
-                                if (terrorist.Position.X == 0)
+                                var terrorist = zone.Terrorists[k];
+                                if (terrorist.Ped.Position.X == 0)
                                 {
                                     zone.DeleteTerrorists();
                                     break;  
@@ -183,7 +218,7 @@ namespace TerroristPresenceMod
                     if (zone.IsReclaimable)
                         zone.ZoneReclaimedTick();
 
-                zonesReclaimedDelay = 375;
+                zonesReclaimedDelay = 14000;
             } else
             {
                 zonesReclaimedDelay--;
@@ -196,7 +231,7 @@ namespace TerroristPresenceMod
                         if (zone.ZoneLostTick())
                             break;
 
-                zonesLostDelay = 8000;
+                zonesLostDelay = 15000;
             } else
             {
                 zonesLostDelay--;
